@@ -88,10 +88,8 @@
 
   /* Distribution */
   .dist{display:flex;flex-direction:column;gap:10px;max-width:760px;}
-  .dist-row{display:grid;grid-template-columns:180px 1fr 40px;align-items:center;gap:14px;}
+  .dist-row{display:grid;grid-template-columns:220px 40px;align-items:center;gap:14px;padding:4px 0;}
   .dist-label{font-size:13.5px;color:var(--ink);}
-  .dist-track{background:var(--paper-raised);border:1px solid var(--hairline);height:22px;position:relative;}
-  .dist-fill{height:100%;}
   .dist-count{font-family:'IBM Plex Mono', monospace;font-size:13px;text-align:right;color:var(--ink-soft);}
 
   /* Timeline / Gantt */
@@ -183,7 +181,7 @@
     .wrap{padding:0 20px;}
     .kpis{grid-template-columns:1fr 1fr;}
     header.top{padding:44px 0 32px;}
-    .dist-row{grid-template-columns:120px 1fr 34px;}
+    .dist-row{grid-template-columns:1fr 34px;}
   }
 </style>
 </head>
@@ -197,7 +195,6 @@
       <span class="agency-mark">Агентство управления репутацией — отчёт по флайтам</span>
       <span class="as-of">данные по январь 2026 · отчёт сформирован 2025-09-01</span>
     </div>
-    <h1>Одиннадцать клиентов, восемнадцать флайтов, и что с ними на самом деле произошло</h1>
     <p class="lede">Дашборд построен на <strong>исправленном</strong> отчёте (report_fixed.csv) после аудита исходных данных биллинга. Четыре флайта остаются под вопросом и показаны отдельно — не как решённые.</p>
 
     <div class="kpis">
@@ -228,7 +225,6 @@
 
   <section id="timeline">
     <h2>Флайты по клиентам во времени</h2>
-    <p class="section-note">Каждая полоса — один флайт. Штриховка означает, что классификация этого флайта требует подтверждения заказчика (см. раздел ниже) — она показана как есть, а не спрятана в общий процент.</p>
     <div class="timeline-scroll">
       <div class="timeline">
         <div class="axis-row">
@@ -254,14 +250,6 @@
       <thead><tr><th>Клиент</th><th>Флайт</th><th>Статус</th><th>Почему под вопросом</th></tr></thead>
       <tbody></tbody>
     </table>
-  </section>
-
-  <section id="caveat" style="border-bottom:none;">
-    <h2>Как читать долю пролонгации</h2>
-    <div class="callout">
-      <p><strong>36% — не окончательная цифра.</strong> В исходном отчёте (до аудита) доля оттока совпадала с этой почти один в один — но по другим клиентам: часть флайтов была ошибочно списана в «отвал», хотя клиент продолжал платить, а часть держалась в статусе «неизвестно» дольше, чем нужно. Ошибки в сумме компенсировали друг друга — это не значит, что методика подсчёта была верной.</p>
-      <p>Знаменатель (14) уже исключает разовую услугу (304) и три полностью нерешённых случая (330 #1, 331 #1, 350 #2). Пока заказчик не ответит на открытые вопросы аудита, доля пролонгации может измениться на 1–2 флайта в любую сторону. Подробное обоснование каждой строки — в AUDIT.md.</p>
-    </div>
   </section>
 
   <footer>
@@ -340,14 +328,12 @@ const distCounts = [
   {label:'Сменил услугу', count:1, cat:'flag'},
   {label:'В процессе / неизвестно', count:1, cat:'flag'},
 ];
-const distMax = Math.max(...distCounts.map(d=>d.count));
 const distEl = document.getElementById('dist-chart');
 distCounts.forEach(d=>{
   const row = document.createElement('div');
   row.className = 'dist-row';
   row.innerHTML = `
     <div class="dist-label">${d.label}</div>
-    <div class="dist-track"><div class="dist-fill cat-${d.cat}" style="width:${(d.count/18*100).toFixed(1)}%"></div></div>
     <div class="dist-count">${d.count}</div>
   `;
   distEl.appendChild(row);
