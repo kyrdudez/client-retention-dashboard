@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Удержание клиентов — дашборд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEBE3;
+    --paper-raised:#F5F3EC;
+    --ink:#23281F;
+    --ink-soft:#5B6058;
+    --hairline:#D9D5C7;
+    --retained:#2F6B57;
+    --retained-soft:#DCE7E1;
+    --churn:#A6432E;
+    --churn-soft:#F0DDD6;
+    --flag:#B98A2E;
+    --flag-soft:#F2E7CE;
+    --oneoff:#8A8579;
+    --oneoff-soft:#E7E4DB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1160px;margin:0 auto;padding:0 32px;}
+
+  header.top{padding:64px 0 40px;border-bottom:1px solid var(--hairline);}
+  .eyebrow-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px;flex-wrap:wrap;gap:8px;}
+  .agency-mark{font-family:'IBM Plex Mono', monospace;font-size:13px;color:var(--ink-soft);letter-spacing:0.02em;}
+  .as-of{font-family:'IBM Plex Mono', monospace;font-size:13px;color:var(--ink-soft);}
+
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size:clamp(34px,5vw,52px);
+    line-height:1.08;
+    margin:0 0 16px;
+    max-width:14ch;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    font-size:17px;
+    color:var(--ink-soft);
+    max-width:62ch;
+    margin:0;
+  }
+
+  /* KPI strip */
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--hairline);
+    border:1px solid var(--hairline);
+    margin-top:44px;
+  }
+  .kpi{background:var(--paper-raised);padding:22px 24px;}
+  .kpi .num{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-size:40px;
+    font-weight:600;
+    line-height:1;
+    margin-bottom:8px;
+  }
+  .kpi .label{font-size:13.5px;color:var(--ink-soft);max-width:20ch;}
+  .kpi.hero-kpi .num{color:var(--retained);}
+
+  section{padding:56px 0;border-bottom:1px solid var(--hairline);}
+  section:last-of-type{border-bottom:none;}
+
+  h2{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size:24px;
+    margin:0 0 6px;
+  }
+  .section-note{color:var(--ink-soft);font-size:14px;margin:0 0 28px;max-width:70ch;}
+
+  /* Distribution */
+  .dist{display:flex;flex-direction:column;gap:10px;max-width:760px;}
+  .dist-row{display:grid;grid-template-columns:180px 1fr 40px;align-items:center;gap:14px;}
+  .dist-label{font-size:13.5px;color:var(--ink);}
+  .dist-track{background:var(--paper-raised);border:1px solid var(--hairline);height:22px;position:relative;}
+  .dist-fill{height:100%;}
+  .dist-count{font-family:'IBM Plex Mono', monospace;font-size:13px;text-align:right;color:var(--ink-soft);}
+
+  /* Timeline / Gantt */
+  .timeline-scroll{overflow-x:auto;padding-bottom:4px;}
+  .timeline{min-width:920px;}
+  .axis-row{display:grid;grid-template-columns:220px 1fr;margin-bottom:10px;}
+  .axis-spacer{}
+  .axis-ticks{position:relative;height:20px;font-family:'IBM Plex Mono', monospace;font-size:11px;color:var(--ink-soft);}
+  .axis-tick{position:absolute;top:0;border-left:1px solid var(--hairline);padding-left:5px;height:100%;}
+  .client-row{display:grid;grid-template-columns:220px 1fr;align-items:center;padding:9px 0;border-top:1px solid var(--hairline);}
+  .client-row:first-of-type{border-top:none;}
+  .client-name{font-size:13.5px;padding-right:12px;}
+  .client-name .pid{display:block;font-family:'IBM Plex Mono', monospace;font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .track{position:relative;height:26px;background:var(--paper-raised);border:1px solid var(--hairline);}
+  .bar{
+    position:absolute;top:2px;bottom:2px;
+    cursor:default;
+    display:flex;align-items:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:#fff;
+    padding:0 6px;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .bar.flagged{
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 4px, transparent 4px 9px);
+  }
+  .bar.cat-retained{background-color:var(--retained);}
+  .bar.cat-churn{background-color:var(--churn);}
+  .bar.cat-flag{background-color:var(--flag);}
+  .bar.cat-oneoff{background-color:var(--oneoff);}
+
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:22px;font-size:13px;color:var(--ink-soft);}
+  .legend-item{display:flex;align-items:center;gap:7px;}
+  .swatch{width:14px;height:14px;flex:none;}
+  .swatch.cat-retained{background:var(--retained);}
+  .swatch.cat-churn{background:var(--churn);}
+  .swatch.cat-flag{background:var(--flag);}
+  .swatch.cat-oneoff{background:var(--oneoff);}
+  .swatch.hatched{background-image:repeating-linear-gradient(45deg, rgba(0,0,0,0.18) 0 3px, transparent 3px 6px), var(--ink-soft);}
+
+  /* tooltip */
+  #tooltip{
+    position:fixed;
+    max-width:340px;
+    background:var(--ink);
+    color:var(--paper);
+    font-size:13px;
+    line-height:1.5;
+    padding:12px 14px;
+    display:none;
+    z-index:50;
+    pointer-events:none;
+  }
+  #tooltip .tt-status{font-family:'IBM Plex Mono', monospace;font-size:11.5px;opacity:0.75;display:block;margin-bottom:4px;}
+
+  /* callout */
+  .callout{
+    background:var(--flag-soft);
+    border-left:3px solid var(--flag);
+    padding:20px 24px;
+    max-width:78ch;
+  }
+  .callout p{margin:0 0 10px;font-size:14.5px;}
+  .callout p:last-child{margin-bottom:0;}
+  .callout strong{font-weight:600;}
+
+  /* watchlist table */
+  table.watch{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.watch th{
+    text-align:left;font-weight:500;color:var(--ink-soft);
+    font-size:12px;padding:0 12px 10px 0;border-bottom:1px solid var(--hairline);
+  }
+  table.watch td{padding:12px 12px 12px 0;border-bottom:1px solid var(--hairline);vertical-align:top;}
+  table.watch tr:last-child td{border-bottom:none;}
+  .chip{
+    display:inline-block;font-family:'IBM Plex Mono', monospace;font-size:10.5px;
+    padding:2px 7px;color:#fff;white-space:nowrap;
+  }
+  .chip.cat-flag{background:var(--flag);}
+  .chip.cat-churn{background:var(--churn);}
+  .comment-cell{color:var(--ink-soft);max-width:52ch;}
+
+  footer{padding:36px 0 64px;color:var(--ink-soft);font-size:13px;}
+  footer a{color:var(--ink);}
+
+  @media (max-width:760px){
+    .wrap{padding:0 20px;}
+    .kpis{grid-template-columns:1fr 1fr;}
+    header.top{padding:44px 0 32px;}
+    .dist-row{grid-template-columns:120px 1fr 34px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow-row">
+      <span class="agency-mark">Агентство управления репутацией — отчёт по флайтам</span>
+      <span class="as-of">данные по январь 2026 · отчёт сформирован 2025-09-01</span>
+    </div>
+    <h1>Одиннадцать клиентов, восемнадцать флайтов, и что с ними на самом деле произошло</h1>
+    <p class="lede">Дашборд построен на <strong>исправленном</strong> отчёте (report_fixed.csv) после аудита исходных данных биллинга. Четыре флайта остаются под вопросом и показаны отдельно — не как решённые.</p>
+
+    <div class="kpis">
+      <div class="kpi hero-kpi">
+        <div class="num">36%</div>
+        <div class="label">доля пролонгации среди флайтов с известным исходом (5 из 14)</div>
+      </div>
+      <div class="kpi">
+        <div class="num">11</div>
+        <div class="label">уникальных клиентов — совпадает с числом в исходном отчёте</div>
+      </div>
+      <div class="kpi">
+        <div class="num">18</div>
+        <div class="label">флайтов проверено (было 17 — один достроен по свежим отгрузкам)</div>
+      </div>
+      <div class="kpi">
+        <div class="num">7</div>
+        <div class="label">флайтов помечены аудитом флагом: открытый вопрос к заказчику или реклассификация по предположению, а не по однозначному факту</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="distribution">
+    <h2>Распределение статусов</h2>
+    <p class="section-note">18 флайтов по итоговому статусу после аудита. Пролонгация и отток показаны с разбивкой на «естественное непродление» и «резкий уход» — это разные события для отдела продаж.</p>
+    <div class="dist" id="dist-chart"></div>
+  </section>
+
+  <section id="timeline">
+    <h2>Флайты по клиентам во времени</h2>
+    <p class="section-note">Каждая полоса — один флайт. Штриховка означает, что классификация этого флайта требует подтверждения заказчика (см. раздел ниже) — она показана как есть, а не спрятана в общий процент.</p>
+    <div class="timeline-scroll">
+      <div class="timeline">
+        <div class="axis-row">
+          <div class="axis-spacer"></div>
+          <div class="axis-ticks" id="axis-ticks"></div>
+        </div>
+        <div id="client-rows"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch cat-retained"></span>Пролонгировано</div>
+      <div class="legend-item"><span class="swatch cat-churn"></span>Непродлено / отвал</div>
+      <div class="legend-item"><span class="swatch cat-oneoff"></span>Разовая услуга — завершён</div>
+      <div class="legend-item"><span class="swatch cat-flag"></span>Не завершено / особый случай</div>
+      <div class="legend-item"><span class="swatch hatched"></span>Штриховка — требует подтверждения</div>
+    </div>
+  </section>
+
+  <section id="watchlist">
+    <h2>Что требует внимания заказчика</h2>
+    <p class="section-note">7 флайтов, помеченных аудитом флагом: 3 остаются полностью нерешёнными и не входят в расчёт доли пролонгации (330 #1, 331 #1 и 350 #2 — вместе с разовой услугой 304 это и есть 4 флайта, исключённых из «5 из 14» выше); ещё 4 — реклассификация, основанная на предположении, а не на метке label.</p>
+    <table class="watch" id="watch-table">
+      <thead><tr><th>Клиент</th><th>Флайт</th><th>Статус</th><th>Почему под вопросом</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="caveat" style="border-bottom:none;">
+    <h2>Как читать долю пролонгации</h2>
+    <div class="callout">
+      <p><strong>36% — не окончательная цифра.</strong> В исходном отчёте (до аудита) доля оттока совпадала с этой почти один в один — но по другим клиентам: часть флайтов была ошибочно списана в «отвал», хотя клиент продолжал платить, а часть держалась в статусе «неизвестно» дольше, чем нужно. Ошибки в сумме компенсировали друг друга — это не значит, что методика подсчёта была верной.</p>
+      <p>Знаменатель (14) уже исключает разовую услугу (304) и три полностью нерешённых случая (330 #1, 331 #1, 350 #2). Пока заказчик не ответит на открытые вопросы аудита, доля пролонгации может измениться на 1–2 флайта в любую сторону. Подробное обоснование каждой строки — в AUDIT.md.</p>
+    </div>
+  </section>
+
+  <footer>
+    Источник: report_fixed.csv (аудит report.csv агентства). Период данных works.csv: январь 2024 — январь 2026.
+  </footer>
+</div>
+
+<script>
+const MONTH_START = {y:2024, m:1};
+const MONTH_END   = {y:2026, m:2}; // inclusive last labeled month index
+
+function monthIndex(dateStr){
+  const [y,m] = dateStr.split('-').map(Number);
+  return (y - MONTH_START.y) * 12 + (m - MONTH_START.m);
+}
+const TOTAL_MONTHS = monthIndex(`${MONTH_END.y}-${String(MONTH_END.m).padStart(2,'0')}-01`) + 1;
+
+const MONTH_NAMES = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+function monthLabel(idx){
+  const y = MONTH_START.y + Math.floor((MONTH_START.m - 1 + idx) / 12);
+  const m = ((MONTH_START.m - 1 + idx) % 12) + 1;
+  return MONTH_NAMES[m-1] + " '" + String(y).slice(2);
+}
+
+// category: 'retained' | 'churn' | 'oneoff' | 'flag'
+const flights = [
+  {client:'Аврора Клиник', pid:'301', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'пролонгировано', cat:'retained', flagged:false, comment:'Отгрузки без разрыва, продолжились во втором флайте.'},
+    {no:2, start:'2024-07-01', end:'2024-12-01', status:'непродлено', cat:'churn', flagged:false, comment:'Флайт доработан полностью, новых отгрузок после декабря не было.'},
+  ]},
+  {client:'БетаСтрой', pid:'302', rows:[
+    {no:1, start:'2024-02-01', end:'2024-07-01', status:'непродлено', cat:'churn', flagged:false, comment:'Флайт доработан полностью, продления не последовало.'},
+  ]},
+  {client:'Эверест Тур', pid:'303', rows:[
+    {no:1, start:'2024-03-01', end:'2024-08-01', status:'отвал', cat:'churn', flagged:false, comment:'Метка СТОП в июле, внутри флайта — отгрузок после не было.'},
+  ]},
+  {client:'Нова Медиа', pid:'304', rows:[
+    {no:1, start:'2024-05-01', end:'2024-05-01', status:'завершился (разовые работы)', cat:'oneoff', flagged:false, comment:'Разовый аудит, один месяц — работы просто завершены.'},
+  ]},
+  {client:'Гамма Ритейл Про', pid:'310 → 311', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'пролонгировано', cat:'retained', flagged:false, comment:'project_id сменился 310→311 без разрыва отгрузок — верно объединено.'},
+    {no:2, start:'2024-07-01', end:'2024-12-01', status:'непродлено', cat:'churn', flagged:false, comment:'Флайт доработан полностью, новых отгрузок не было.'},
+  ]},
+  {client:'Дельта Реклама', pid:'320 → 321', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'пролонгировано', cat:'retained', flagged:true, comment:'На апрель–июнь приходится двойной биллинг по старому и новому project_id — не влияет на статус, но искажает суммы. Нужно уточнение у биллинга.'},
+    {no:2, start:'2024-07-01', end:'2024-12-01', status:'отвал (предположительно)', cat:'churn', flagged:true, comment:'Изменено с «непродлено»: отгрузки обрываются в сентябре, за 3 мес. до конца флайта, метки нет. Допущение — нужно подтверждение заказчика.'},
+  ]},
+  {client:'Кварц Медиа', pid:'330', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'требует уточнения', cat:'flag', flagged:true, comment:'Отчёт склеил янв-дек 2024 в один 12-мес флайт, но услуга сменилась 2024-07-01 (была Крауд-маркетинг, 6 мес). После июня — 4 месяца полной тишины без меток. Нужен вопрос заказчику.'},
+    {no:2, start:'2024-11-01', end:'2025-10-01', status:'отвал (предположительно)', cat:'churn', flagged:true, comment:'Начало флайта — по первой отгрузке после разрыва (ноябрь). Отгрузки обрываются в феврале 2025, за 8 мес. до конца, меток нет. Вся сегментация требует ручной проверки.'},
+  ]},
+  {client:'Титан Строй', pid:'331', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'сменил услугу (флайт прерван досрочно)', cat:'flag', flagged:true, comment:'До июля 2024 действовала «Мониторинг СМИ» (12 мес), не «Управление репутацией» (6 мес), как в отчёте. Клиент сменил услугу на 6-м из 12 месяцев — не продление и не отток в чистом виде.'},
+    {no:2, start:'2024-07-01', end:'2024-12-01', status:'непродлено', cat:'churn', flagged:false, comment:'Флайт (уже новой услуги) доработан полностью, продления не было.'},
+  ]},
+  {client:'Сигма Групп', pid:'340', rows:[
+    {no:1, start:'2024-01-01', end:'2024-06-01', status:'пролонгировано', cat:'retained', flagged:false, comment:'Изменено с «отвал»: метка СТОП в мае не помешала отгрузке в июне возобновиться — клиент фактически не уходил.'},
+    {no:2, start:'2024-07-01', end:'2024-12-01', status:'отвал (предположительно)', cat:'churn', flagged:true, comment:'flight_no и даты исправлены (в отчёте было наложение на 1-й флайт). Отгрузки обрываются в сентябре, за 2 мес. до конца, метки нет — похоже на резкий уход без пометки.'},
+  ]},
+  {client:'Орион Диджитал', pid:'350', rows:[
+    {no:1, start:'2025-03-01', end:'2025-08-01', status:'пролонгировано', cat:'retained', flagged:false, comment:'Изменено с «неизвестно»: отчёт собран сразу после конца флайта. Свежие отгрузки подтверждают продление без разрыва.'},
+    {no:2, start:'2025-09-01', end:'2026-02-01', status:'в процессе / неизвестно', cat:'flag', flagged:true, comment:'Новая строка. Флайт по графику ещё не завершён (план — февраль 2026), данные обрываются январём 2026 — рано делать вывод.'},
+  ]},
+  {client:'Пульс Медиа', pid:'351', rows:[
+    {no:1, start:'2025-03-01', end:'2025-08-01', status:'непродлено', cat:'churn', flagged:false, comment:'Изменено с «неизвестно»: отгрузок нет вплоть до января 2026 — 5+ месяцев тишины, продления не произошло.'},
+  ]},
+];
+
+// ---- Distribution ----
+const distCounts = [
+  {label:'Пролонгировано', count:5, cat:'retained'},
+  {label:'Непродлено', count:5, cat:'churn'},
+  {label:'Отвал', count:4, cat:'churn'},
+  {label:'Завершился (разовые работы)', count:1, cat:'oneoff'},
+  {label:'Требует уточнения', count:1, cat:'flag'},
+  {label:'Сменил услугу', count:1, cat:'flag'},
+  {label:'В процессе / неизвестно', count:1, cat:'flag'},
+];
+const distMax = Math.max(...distCounts.map(d=>d.count));
+const distEl = document.getElementById('dist-chart');
+distCounts.forEach(d=>{
+  const row = document.createElement('div');
+  row.className = 'dist-row';
+  row.innerHTML = `
+    <div class="dist-label">${d.label}</div>
+    <div class="dist-track"><div class="dist-fill cat-${d.cat}" style="width:${(d.count/18*100).toFixed(1)}%"></div></div>
+    <div class="dist-count">${d.count}</div>
+  `;
+  distEl.appendChild(row);
+});
+
+// ---- Axis ----
+const axisEl = document.getElementById('axis-ticks');
+const pxPerMonth = 900 / TOTAL_MONTHS;
+for(let i=0;i<TOTAL_MONTHS;i+=3){
+  const tick = document.createElement('div');
+  tick.className = 'axis-tick';
+  tick.style.left = (i*pxPerMonth)+'px';
+  tick.textContent = monthLabel(i);
+  axisEl.appendChild(tick);
+}
+axisEl.style.width = (TOTAL_MONTHS*pxPerMonth)+'px';
+
+// ---- Rows ----
+const rowsEl = document.getElementById('client-rows');
+const tooltip = document.getElementById('tooltip');
+
+flights.forEach(client=>{
+  const row = document.createElement('div');
+  row.className = 'client-row';
+  const name = document.createElement('div');
+  name.className = 'client-name';
+  name.innerHTML = `${client.client}<span class="pid">project_id ${client.pid}</span>`;
+  const track = document.createElement('div');
+  track.className = 'track';
+  track.style.width = (TOTAL_MONTHS*pxPerMonth)+'px';
+
+  client.rows.forEach(f=>{
+    const s = monthIndex(f.start), e = monthIndex(f.end);
+    const bar = document.createElement('div');
+    bar.className = `bar cat-${f.cat}` + (f.flagged ? ' flagged' : '');
+    bar.style.left = (s*pxPerMonth)+'px';
+    bar.style.width = Math.max((e-s+1)*pxPerMonth - 2, 6)+'px';
+    bar.textContent = `#${f.no}`;
+    bar.addEventListener('mousemove', (ev)=>{
+      tooltip.style.display='block';
+      tooltip.innerHTML = `<span class="tt-status">${client.client} · флайт ${f.no} · ${f.start} — ${f.end}</span>${f.status}. ${f.comment}`;
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      let x = ev.clientX + 16, y = ev.clientY + 16;
+      if(x + tw > window.innerWidth - 12) x = ev.clientX - tw - 16;
+      if(y + th > window.innerHeight - 12) y = ev.clientY - th - 16;
+      tooltip.style.left = x+'px';
+      tooltip.style.top = y+'px';
+    });
+    bar.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
+    track.appendChild(bar);
+  });
+
+  row.appendChild(name);
+  row.appendChild(track);
+  rowsEl.appendChild(row);
+});
+
+// ---- Watchlist ----
+const watchBody = document.querySelector('#watch-table tbody');
+flights.forEach(client=>{
+  client.rows.forEach(f=>{
+    if(f.flagged){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${client.client}</td>
+        <td>#${f.no}<br><span style="color:var(--ink-soft);font-size:12px;">${f.start} — ${f.end}</span></td>
+        <td><span class="chip cat-${f.cat==='retained'?'churn':f.cat}">${f.status}</span></td>
+        <td class="comment-cell">${f.comment}</td>
+      `;
+      watchBody.appendChild(tr);
+    }
+  });
+});
+</script>
+</body>
+</html>
